@@ -1,1 +1,23 @@
 
+.*
+!.dockerignore
+!.storybook
+!.circle
+!.eslintrc
+!.gitignore
+!.github
+!.babelrc
+!.plop
+!.jest
+!.linguirc
+!.prettierrc
+!.prettierignore
+!.tx
+dist
+node_modules
+src/locales/_build
+
+cypress/videos
+cypress/screenshots
+cypress/fixtures/example.json
+
