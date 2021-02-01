@@ -3,6 +3,8 @@ import React from "react";
 import { ErrorMessage, Radio } from "@components/atoms";
 import { PROVIDERS } from "@temp/core/config";
 
+import { CardConnectPaymentGateway } from "@components/organisms/CardConnectPaymentGateway";
+
 import {
   BraintreePaymentGateway,
   DummyPaymentGateway,
@@ -94,6 +96,40 @@ const PaymentGatewaysList: React.FC<IProps> = ({
                     processPayment={token => processPayment(id, token)}
                     initialStatus={selectedPaymentGatewayToken}
                   />
+                )}
+              </div>
+            );
+
+          case PROVIDERS.CARDCONNECT.label:
+            return (
+              <div key={index}>
+                <S.Tile checked={checked}>
+                  <Radio
+                    data-test="checkoutPaymentGatewayBraintreeInput"
+                    name="payment-method"
+                    value="credit-card"
+                    checked={checked}
+                    onChange={() =>
+                        selectPaymentGateway && selectPaymentGateway(id)
+                    }
+                    customLabel
+                  >
+                  <span data-test="checkoutPaymentGatewayBraintreeName">
+                    {name}
+                  </span>
+                  </Radio>
+                </S.Tile>
+                {checked && (
+                  <CardConnectPaymentGateway
+                    config={config}
+                    formRef={formRef}
+                    formId={formId}
+                    processPayment={(token, cardData) =>
+                        processPayment(id, token, cardData)
+                    }
+                    errors={errors}
+                    onError={onError}
+                />
                 )}
               </div>
             );
