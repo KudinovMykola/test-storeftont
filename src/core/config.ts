@@ -12,6 +12,9 @@ export const PROVIDERS = {
   DUMMY: {
     label: "Dummy",
   },
+  CARDCONNECT: {
+    label: "Cardconnect",
+  },
   STRIPE: {
     label: "Stripe",
   },
