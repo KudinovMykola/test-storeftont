@@ -3,13 +3,12 @@ import React from "react";
 import { ErrorMessage, Radio } from "@components/atoms";
 import { PROVIDERS } from "@temp/core/config";
 
-import { CardConnectPaymentGateway } from "@components/organisms/CardConnectPaymentGateway";
-
 import {
   BraintreePaymentGateway,
   DummyPaymentGateway,
   StripePaymentGateway,
   AdyenPaymentGateway,
+  CardConnectPaymentGateway,
 } from "..";
 import * as S from "./styles";
 import { IProps } from "./types";
@@ -105,18 +104,18 @@ const PaymentGatewaysList: React.FC<IProps> = ({
               <div key={index}>
                 <S.Tile checked={checked}>
                   <Radio
-                    data-test="checkoutPaymentGatewayBraintreeInput"
+                    data-test="checkoutPaymentGatewayCardConnectInput"
                     name="payment-method"
                     value="credit-card"
                     checked={checked}
                     onChange={() =>
-                        selectPaymentGateway && selectPaymentGateway(id)
+                      selectPaymentGateway && selectPaymentGateway(id)
                     }
                     customLabel
                   >
-                  <span data-test="checkoutPaymentGatewayBraintreeName">
-                    {name}
-                  </span>
+                    <span data-test="checkoutPaymentGatewayCardConnectName">
+                      {name}
+                    </span>
                   </Radio>
                 </S.Tile>
                 {checked && (
@@ -125,11 +124,11 @@ const PaymentGatewaysList: React.FC<IProps> = ({
                     formRef={formRef}
                     formId={formId}
                     processPayment={(token, cardData) =>
-                        processPayment(id, token, cardData)
+                      processPayment(id, token, cardData)
                     }
                     errors={errors}
                     onError={onError}
-                />
+                  />
                 )}
               </div>
             );
