@@ -2,18 +2,18 @@ import React from "react";
 
 import { IProps } from "./types";
 
-import { CardConnectForm } from "@components/organisms/CardConnectForm"
+import { CardConnectForm } from "@components/organisms/";
 
 import {
   cardconnectPayment,
   ErrorData,
   ICardInputs,
   ICardPaymentInput,
-  PaymentData
+  PaymentData,
 } from "@temp/core/payments/cardconnect";
 
 import * as S from "./styles";
-import {maybe, removeEmptySpaces} from "@temp/core/utils";
+import { maybe, removeEmptySpaces } from "@temp/core/utils";
 
 const INITIAL_CARD_ERROR_STATE = {
   fieldErrors: {
@@ -33,8 +33,8 @@ const CardConnectPaymentGateway: React.FC<IProps> =({
 }, IProps) => {
 
   const tokenize = async (creditCard: ICardPaymentInput) => {
-    const cardData = cardconnectPayment(creditCard) as PaymentData
-    return cardData
+    const cardData = cardconnectPayment(creditCard) as PaymentData;
+    return cardData;
   };
 
   const handleSubmit = async (formData: ICardInputs) => {
@@ -44,12 +44,10 @@ const CardConnectPaymentGateway: React.FC<IProps> =({
       expirationDate: removeEmptySpaces(maybe(() => formData.ccExp, "") || ""),
       number: removeEmptySpaces(maybe(() => formData.ccNumber, "") || ""),
     };
-    const payment = await tokenize(creditCard)
+    const payment = await tokenize(creditCard);
     if (payment?.token) {
-      console.log('sending')
-      console.log(payment)
-      processPayment(payment?.token, {
-        brand: payment?.ccType,
+      processPayment(payment.token, {
+        brand: payment.ccType,
         firstDigits: null,
         lastDigits: payment?.lastDigits,
         expMonth: null,
@@ -58,26 +56,25 @@ const CardConnectPaymentGateway: React.FC<IProps> =({
     }
   };
 
-  const [cardErrors] = React.useState<ErrorData>(
-    INITIAL_CARD_ERROR_STATE
-  );
+  const [cardErrors] = React.useState<ErrorData>(INITIAL_CARD_ERROR_STATE);
 
   return (
     <S.Wrapper datatype="cardconnectPaymentGateway">
-      <CardConnectForm
-        formRef={formRef}
-        formId={formId}
-        cardErrors={cardErrors.fieldErrors}
-        labelsText={{
-          ccCsc: "CVC",
-          ccExp: "ExpiryDate",
-          ccNumber: "Number",
-        }}
-        disabled={false}
-        handleSubmit={handleSubmit}
-      />
-    </S.Wrapper>
-  )
-}
 
-export { CardConnectPaymentGateway }
+        <CardConnectForm
+          formRef={formRef}
+          formId={formId}
+          cardErrors={cardErrors.fieldErrors}
+          labelsText={{
+            ccCsc: "CVC",
+            ccExp: "ExpiryDate",
+            ccNumber: "Number",
+          }}
+          disabled={false}
+          handleSubmit={handleSubmit}
+        />
+    </S.Wrapper>
+  );
+};
+
+export { CardConnectPaymentGateway };

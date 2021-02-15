@@ -28,3 +28,5 @@ export * from "./CheckoutReview";
 export * from "./ThankYou";
 export * from "./AdyenPaymentGateway";
 export * from "./AddToCartSection";
+export * from "./CardConnectPaymentGateway";
+export * from "./CardConnectForm";

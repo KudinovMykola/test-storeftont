@@ -26,9 +26,20 @@ export interface IProps {
 
 export type CardErrors = CardError[] | null[];
 
-export interface ICustomInputProps {
-  errors: CardErrors;
-  label: string;
+export type PropsWithFormik = Omit<IProps, "handleSubmit"> & IFormikProps;
+
+export interface CardConnectInput {
+  ccToken: string;
+  ccExpiry: string;
 }
 
-export type PropsWithFormik = Omit<IProps, "handleSubmit"> & IFormikProps;
+export interface CCAdditionalCreate_CheckoutAddCC {
+  __typename: "CardConnectAdditionalCreate";
+}
+
+export interface CCAdditionalCreate {
+  checkoutPaymentCreate: CCAdditionalCreate_CheckoutAddCC | null;
+}
+export interface CCAdditionalCreateVariables {
+  ccInput: CardConnectInput;
+}

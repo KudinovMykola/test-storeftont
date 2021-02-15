@@ -1,10 +1,10 @@
-import { utf8Encode } from 'string-encode';
+import { utf8Encode } from "string-encode";
 
 export interface PaymentData {
   lastDigits: string;
   ccType: string;
   token: string;
-  creditCard: string;
+  creditCard: any;
 }
 
 export interface ICardInputs {
@@ -36,12 +36,18 @@ export interface ErrorData {
   nonFieldError?: string;
 }
 
-export const cardconnectPayment =  ( cCard?: any) => {
-  const lastDigits = cCard.number.slice(-4)
-  const ccType = cCard.cvv
-  const token = btoa(utf8Encode(cCard.number))
-  const creditCard = cCard.number
-  return { lastDigits, ccType, token, creditCard}
+export const cardconnectPayment = (cCard?: any) => {
+  const lastDigits = cCard.number.slice(-4);
+  const ccType = cCard.cvv;
+  const token = btoa(utf8Encode(cCard.number));
+  const creditCard = {
+    brand: null,
+    firstDigits: cCard.number.slice(4),
+    lastDigits: cCard.number.slice(-4),
+    expMonth: null,
+    expYear: null,
+  };
+  return { lastDigits, ccType, token, creditCard };
 };
 
 
