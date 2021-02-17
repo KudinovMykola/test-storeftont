@@ -7,6 +7,7 @@ export const Form = styled.form`
 `;
 
 export const Label = styled.label`
+  position: relative;
   display: block;
   font-size: 15px;
   font-family: 'Open Sans' , Arial , sans-serif;
@@ -15,7 +16,8 @@ export const Label = styled.label`
   font-weight: bold;
 `;
 
-export const Select = styled.select`;
+export const Select = styled.select`
+  position: relative;
   display: inline-block;
   height: 40px;
   width: 200px;
@@ -26,3 +28,8 @@ export const Select = styled.select`;
   margin-bottom: 15px;
   font-size: 15px;
 `;
+
+export const Div = styled.div`
+  align-items: center;
+  float: right;
+`

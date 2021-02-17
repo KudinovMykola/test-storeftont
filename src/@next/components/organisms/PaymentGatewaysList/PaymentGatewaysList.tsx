@@ -121,11 +121,11 @@ const PaymentGatewaysList: React.FC<IProps> = ({
                 </S.Tile>
                 {checked && (
                   <CardConnectPaymentGateway
-                    config={config}
+                    // config={config}
                     formRef={formRef}
                     formId={formId}
-                    processPayment={(token, cardData) =>
-                        processPayment(id, token, cardData)
+                    processPayment={(token) =>
+                        processPayment(id, token)
                     }
                     errors={errors}
                     onError={onError}
