@@ -8,7 +8,6 @@ import { IProps } from "./types";
 
 /**
  * CardConnect payment gateway.
- * TODO replace url values as env var.
  */
 
 const ADD_CC = gql`
@@ -20,12 +19,11 @@ const ADD_CC = gql`
         methodId: $methodId
       }
     ) {
-      cardConnectData {
-        token
-      }
+      token
     }
   }
 `;
+
 
 const CardConnectPaymentGateway: React.FC<IProps> = ({
   processPayment,
@@ -34,17 +32,17 @@ const CardConnectPaymentGateway: React.FC<IProps> = ({
 }: IProps) => {
   const pathPart = "https://boltgw.cardconnect.com:8443/itoke/ajax-tokenizer.html";
   const paramsParts = [
+    "frameborder=10px",
+    "scrolling=no",
     "useexpiry=true",
     "usecvv=true",
     "cardinputmaxlength=16",
-    "css=input%2Cselect%7Bwidth%3A%20522px%3Bpadding%3A%206px%2012px%3Bborder%3A%201px%20solid%20%23E5E7E9%3Bborder-radius%3A%206px%3Boutline%3A%20none%3Bmargin-bottom%3A%2015px%3Bfont-size%3A%2015px%3B%7Dinput%7Bheight%3A%2025px%3B%7Dselect%7Bwidth%3A%20100px%3Bheight%3A%2040px%3B%7Dbody%7Bmargin%3A0%3B%7Dlabel%7Bfont-size%3A%2015px%3Bfont-family%3A%20%22Open%20Sans%22%2C%20Arial%2C%20sans-serif%3Bline-height%3A%2026px%3Bmargin-bottom%3A8px%3Bfont-weight%3A%20bold%3B%7Dbutton%3Afocus%2Cinput%3Afocus%2Ca%3Afocus%2Cselect%3Afocus%7Boutline%3A%20none%20!important%3Bbox-shadow%3A%200%200%200%203px%20lightskyblue%20!important%3B%7D",
+    "css=input%2Cselect%7Bwidth%3A%20522px%3Bpadding%3A%206px%2012px%3Bborder%3A%201px%20solid%20%23E5E7E9%3Bborder-radius%3A%206px%3Boutline%3A%20none%3Bmargin-bottom%3A%2015px%3Bfont-size%3A%2015px%3B%7Dinput%7Bheight%3A%2025px%3B%7Dselect%7Bwidth%3A%20100px%3Bheight%3A%2040px%3B%7Dbody%7Bmargin%3A0%3B%7Dlabel%7Bfont-size%3A%2015px%3Bfont-family%3A%20%22Open%20Sans%22%2C%20Arial%2C%20sans-serif%3Bline-height%3A%2026px%3Bmargin-bottom%3A8px%3Bfont-weight%3A%20bold%3B%7Dbutton%3Afocus%2Cinput%3Afocus%2Ca%3Afocus%2Cselect%3Afocus%7Boutline%3A%20none%20!important%3Bbox-shadow%3A%200%200%200%203px%20lightskyblue%20!important%3B%7D"
   ];
-  // I'm not sure that this is correct init values
-  let ccToken: string = "";
-  let ccExpiry: string = "";
-  let ccMethod: string= "";
-  // user can select method from some selector-input
-  // let ccMethod: int
+
+  let ccToken = "";
+  let ccExpiry = "";
+  let ccMethod = "";
 
   const getIframeUrl = () => {
     return `${pathPart}?${paramsParts.join("&")}`;
@@ -55,22 +53,15 @@ const CardConnectPaymentGateway: React.FC<IProps> = ({
     ccExpiry = eventJson.expiry;
   };
 
-  const handlerMethod = () => {
-    const method: any = document.getElementById("methodselector");
-    if (method){
-      ccMethod = method.options[method.selectedIndex].value;
-    }
-  };
-
   const handleTokenEvent = () => {
     window.addEventListener(
       "message",
       event => {
-        // TODO validate refreshedData as obj with non-empty strings message and expiry
-        // Error block
-        const refreshedData = JSON.parse(event.data);
-        if (refreshedData.expiry && refreshedData.message) {
+        if (event.data !== null) {
+          const refreshedData = JSON.parse(event.data);
           putIframeVars(refreshedData);
+        } else {
+          console.log("NO DATA EVENT");
         }
       },
       false
@@ -78,64 +69,59 @@ const CardConnectPaymentGateway: React.FC<IProps> = ({
   };
 
 
-
   return (
-    /* TODO 
-    * add selector input after iframe for ccMethod
-    * ensure that the form submits the given after updating and validating the data of the iframe in the function
-    * ensure that the form submits the given after select method id
-    * add error block
-    */
-    <Mutation mutation={ADD_CC}>
+
+    <Mutation 
+      mutation={ADD_CC} 
+      onCompleted={(data: any) => {
+
+        // Don't know why but checkoutAddCc can be null without onError-calling
+        if(data.checkoutAddCc){
+          processPayment(data.checkoutAddCc.token);
+        } else {
+          console.log('checkoutAddCc or cardConnectData is null. Data:');
+          console.log(data);
+        }
+      }}
+      onError={(errors: any) =>{
+        // TODO Backend Errors handling in ccData-processing 
+        console.log(errors);
+      }}
+      >
       {(addCc: Function) => (
-        <S.Form
-          id={formId}
-          ref={formRef}
+        <S.Form id={formId} ref={formRef} 
           onSubmit={(e: any) => {
-            /* TODO:
-            * delete preventDefault after finish with this Gateway
-            * clear any logs
-            */
-
-            // TODO: this function will
-            // - send method id 
-            // - get token from API
-
-            setTimeout(() => {
-              if (ccToken && ccExpiry && ccMethod) {
+            setTimeout(() => {         
+              if(!ccMethod){
+                console.log('Please choose payment way');
+              } else if(!ccToken || !ccExpiry) {
+                console.log('Incorrect card data. Try again, please');
+              } else {
                 addCc({
-                  variables: {token: ccToken, expiry: ccExpiry, methodId: ccMethod}
+                  variables: {
+                    token: ccToken, 
+                    expiry: ccExpiry, 
+                    methodId: ccMethod
+                  }
                 });
               }
-              if (!ccToken || !ccExpiry) {
-                alert("Missing Card Data");
-              }
-              if (!ccMethod) {
-                alert("Missing Payment Method")
-              }
-            }, 2000)
-
-            //TODO token from ADD CC must be here
-            processPayment(ccToken);
+            }, 500);
           }}>
           <iframe
             title="CardPointeTokenizer"
             id="tokenframe"
             name="tokenframe"
             src={getIframeUrl()}
-            frameBorder="0"
-            scrolling="no"
+            frameBorder="10px"
+            scrolling="yes"
             width="100%"
             height="100%"
             onLoad={handleTokenEvent}
           />
-          <S.Label >
-            Payment Method
-          </S.Label>
+          <S.Label>Payment Network</S.Label>
           <S.Select
-            id="methodselector"
+            onChange={(e) => {ccMethod=e.target.value;}}
             defaultValue=""
-            onChange={handlerMethod}
           >
             <option value="">--</option>
             <option value="JCB">JCB</option>
@@ -144,7 +130,6 @@ const CardConnectPaymentGateway: React.FC<IProps> = ({
             <option value="AMEX">AMEX</option>
             <option value="VISA">VISA</option>
           </S.Select>
-
         </S.Form>
       )}
     </Mutation>

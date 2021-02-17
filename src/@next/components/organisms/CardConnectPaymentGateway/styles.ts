@@ -3,11 +3,10 @@ import { styled } from "@styles";
 export const Form = styled.form`
   padding: 15px;
   margin-bottom: 25px;
-  height: 250px;
+  height: 280px;
 `;
 
-export const Label = styled.label`
-  display: block;
+export const Label = styled.div`
   font-size: 15px;
   font-family: 'Open Sans' , Arial , sans-serif;
   line-height: 26px;
@@ -26,3 +25,5 @@ export const Select = styled.select`;
   margin-bottom: 15px;
   font-size: 15px;
 `;
+
+
