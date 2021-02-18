@@ -124,8 +124,8 @@ const PaymentGatewaysList: React.FC<IProps> = ({
                     // config={config}
                     formRef={formRef}
                     formId={formId}
-                    processPayment={(token) =>
-                        processPayment(id, token)
+                    processPayment={(token, cardData) =>
+                      processPayment(id, token, cardData)
                     }
                     errors={errors}
                     onError={onError}

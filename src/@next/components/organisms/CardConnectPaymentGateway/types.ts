@@ -1,4 +1,4 @@
-import {IFormError} from "@types";
+import {ICardData, IFormError} from "@types";
 
 export interface IProps {
     /**
@@ -12,7 +12,7 @@ export interface IProps {
     /**
      * Method called after the form is submitted. Passed token attribute will be used to create payment.
      */
-    processPayment: (token: string) => void;
+    processPayment: (token: string, cardData: ICardData) => void;
     /**
      * Initially selected status/token
      */
