@@ -11,15 +11,21 @@ import { IProps } from "./types";
  */
 
 const ADD_CC = gql`
-  mutation addCc($token: String!, $expiry: String!, $methodId: Method!){
+  mutation addCc($token: String!, $expiry: String!){
     checkoutAddCc(
       input: {
         ccToken: $token,
-        ccExpiry: $expiry,
-        methodId: $methodId
+        ccExpiry: $expiry
       }
     ) {
-      token
+      token,
+      card {
+        brand,
+        firstDigits,
+        lastDigits,
+        expMonth,
+        expYear  
+      }
     }
   }
 `;
@@ -42,15 +48,9 @@ const CardConnectPaymentGateway: React.FC<IProps> = ({
 
   let ccToken = "";
   let ccExpiry = "";
-  let ccMethod = "";
-
+  
   const getIframeUrl = () => {
     return `${pathPart}?${paramsParts.join("&")}`;
-  };
-
-  const putIframeVars = (eventJson: any) => {
-    ccToken = eventJson.message;
-    ccExpiry = eventJson.expiry;
   };
 
   const handleTokenEvent = () => {
@@ -59,7 +59,9 @@ const CardConnectPaymentGateway: React.FC<IProps> = ({
       event => {
         if (event.data !== null) {
           const refreshedData = JSON.parse(event.data);
-          putIframeVars(refreshedData);
+          
+          ccToken = refreshedData.message;
+          ccExpiry = refreshedData.expiry;
         } else {
           console.log("NO DATA EVENT");
         }
@@ -76,8 +78,9 @@ const CardConnectPaymentGateway: React.FC<IProps> = ({
       onCompleted={(data: any) => {
 
         // Don't know why but checkoutAddCc can be null without onError-calling
-        if(data.checkoutAddCc){
-          processPayment(data.checkoutAddCc.token);
+        const response = data.checkoutAddCc;
+        if (response) {
+          processPayment(response.token, response.card);
         } else {
           console.log('checkoutAddCc or cardConnectData is null. Data:');
           console.log(data);
@@ -92,20 +95,19 @@ const CardConnectPaymentGateway: React.FC<IProps> = ({
         <S.Form id={formId} ref={formRef} 
           onSubmit={(e: any) => {
             setTimeout(() => {         
-              if(!ccMethod){
-                console.log('Please choose payment way');
-              } else if(!ccToken || !ccExpiry) {
+              if(!ccToken || !ccExpiry) {
                 console.log('Incorrect card data. Try again, please');
+                console.log(ccToken);
+                console.log(ccExpiry);
               } else {
                 addCc({
                   variables: {
                     token: ccToken, 
-                    expiry: ccExpiry, 
-                    methodId: ccMethod
+                    expiry: ccExpiry
                   }
                 });
               }
-            }, 500);
+            }, 1000);
           }}>
           <iframe
             title="CardPointeTokenizer"
@@ -118,18 +120,6 @@ const CardConnectPaymentGateway: React.FC<IProps> = ({
             height="100%"
             onLoad={handleTokenEvent}
           />
-          <S.Label>Payment Network</S.Label>
-          <S.Select
-            onChange={(e) => {ccMethod=e.target.value;}}
-            defaultValue=""
-          >
-            <option value="">--</option>
-            <option value="JCB">JCB</option>
-            <option value="MASTERCARD">MASTERCARD</option>
-            <option value="DISCOVERY">DISCOVERY</option>
-            <option value="AMEX">AMEX</option>
-            <option value="VISA">VISA</option>
-          </S.Select>
         </S.Form>
       )}
     </Mutation>

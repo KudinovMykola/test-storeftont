@@ -3,13 +3,12 @@ import React from "react";
 import { ErrorMessage, Radio } from "@components/atoms";
 import { PROVIDERS } from "@temp/core/config";
 
-import { CardConnectPaymentGateway } from "@components/organisms/CardConnectPaymentGateway";
-
 import {
   BraintreePaymentGateway,
   DummyPaymentGateway,
   StripePaymentGateway,
   AdyenPaymentGateway,
+  CardConnectPaymentGateway,
 } from "..";
 import * as S from "./styles";
 import { IProps } from "./types";
@@ -34,6 +33,10 @@ const PaymentGatewaysList: React.FC<IProps> = ({
     <S.Wrapper>
       {paymentGateways.map(({ id, name, config }, index) => {
         const checked = selectedPaymentGateway === id;
+
+        if(paymentGateways.length === 1) {
+          selectPaymentGateway(paymentGateways[0].id); 
+        }
 
         switch (name) {
           case PROVIDERS.BRAINTREE.label:
@@ -96,40 +99,6 @@ const PaymentGatewaysList: React.FC<IProps> = ({
                     processPayment={token => processPayment(id, token)}
                     initialStatus={selectedPaymentGatewayToken}
                   />
-                )}
-              </div>
-            );
-
-          case PROVIDERS.CARDCONNECT.label:
-            return (
-              <div key={index}>
-                <S.Tile checked={checked}>
-                  <Radio
-                    data-test="checkoutPaymentGatewayBraintreeInput"
-                    name="payment-method"
-                    value="credit-card"
-                    checked={checked}
-                    onChange={() =>
-                        selectPaymentGateway && selectPaymentGateway(id)
-                    }
-                    customLabel
-                  >
-                  <span data-test="checkoutPaymentGatewayBraintreeName">
-                    {name}
-                  </span>
-                  </Radio>
-                </S.Tile>
-                {checked && (
-                  <CardConnectPaymentGateway
-                    config={config}
-                    formRef={formRef}
-                    formId={formId}
-                    processPayment={(token, cardData) =>
-                        processPayment(id, token, cardData)
-                    }
-                    errors={errors}
-                    onError={onError}
-                />
                 )}
               </div>
             );
@@ -202,7 +171,35 @@ const PaymentGatewaysList: React.FC<IProps> = ({
                 )}
               </div>
             );
-
+          case PROVIDERS.CARDCONNECT.label:
+            return (
+              <div key={index}>
+                <S.Tile checked={checked}>
+                  <Radio
+                    data-test="checkoutPaymentGatewayDummyInput"
+                    name="payment-method"
+                    value="cardconnect"
+                    checked={checked}
+                    onChange={() => {
+                      selectPaymentGateway && selectPaymentGateway(id);
+                    }}
+                    customLabel
+                  >
+                    <span data-test="checkoutPaymentGatewayDummyName">
+                      {name}
+                    </span>
+                  </Radio>
+                </S.Tile>
+                {checked && (
+                  <CardConnectPaymentGateway
+                    formRef={formRef}
+                    formId={formId}
+                    initialStatus={selectedPaymentGatewayToken}
+                    processPayment={(token, cardData) => processPayment(id, token, cardData)}
+                  />
+                )}
+              </div>
+            );
           default:
             return null;
         }
