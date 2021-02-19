@@ -1,1 +1,1 @@
-export * from "./CardconnectPaymentGateway";
+export * from "./CardConnectPaymentGateway";
