@@ -1,27 +1,29 @@
-import React from "react";
+import React, {useState} from "react";
+
+import { ErrorMessage } from "@components/atoms";
+import { IFormError } from "@types";
 
 import gql from "graphql-tag";
 import { Mutation } from "react-apollo";
 
 import * as S from "./styles";
-import { IProps } from "./types";
-
-/**
- * CardConnect payment gateway.
- * TODO replace url values as env var.
- */
+import { IProps } from "./types"
 
 const ADD_CC = gql`
-  mutation addCc($token: String!, $expiry: String!, $methodId: Method!){
+  mutation addCc($token: String!, $expiry: String!){
     checkoutAddCc(
       input: {
         ccToken: $token,
-        ccExpiry: $expiry,
-        methodId: $methodId
+        ccExpiry: $expiry
       }
     ) {
-      cardConnectData {
-        token
+      token,
+      card {
+        brand,
+        firstDigits,
+        lastDigits,
+        expMonth,
+        expYear  
       }
     }
   }
@@ -31,92 +33,109 @@ const CardConnectPaymentGateway: React.FC<IProps> = ({
   processPayment,
   formRef,
   formId,
+  errors = [],
+  onError,
 }: IProps) => {
+  const [submitErrors, setSubmitErrors] = useState<IFormError[]>([]);
+
   const pathPart = "https://boltgw.cardconnect.com:8443/itoke/ajax-tokenizer.html";
   const paramsParts = [
+    "frameborder=10px",
+    "scrolling=no",
     "useexpiry=true",
     "usecvv=true",
     "cardinputmaxlength=16",
-    "css=input%2Cselect%7Bwidth%3A%20522px%3Bpadding%3A%206px%2012px%3Bborder%3A%201px%20solid%20%23E5E7E9%3Bborder-radius%3A%206px%3Boutline%3A%20none%3Bmargin-bottom%3A%2015px%3Bfont-size%3A%2015px%3B%7Dinput%7Bheight%3A%2025px%3B%7Dselect%7Bwidth%3A%20100px%3Bheight%3A%2040px%3B%7Dbody%7Bmargin%3A0%3B%7Dlabel%7Bfont-size%3A%2015px%3Bfont-family%3A%20%22Open%20Sans%22%2C%20Arial%2C%20sans-serif%3Bline-height%3A%2026px%3Bmargin-bottom%3A8px%3Bfont-weight%3A%20bold%3B%7Dbutton%3Afocus%2Cinput%3Afocus%2Ca%3Afocus%2Cselect%3Afocus%7Boutline%3A%20none%20!important%3Bbox-shadow%3A%200%200%200%203px%20lightskyblue%20!important%3B%7D",
+    "css=input%2Cselect%7Bwidth%3A%20522px%3Bpadding%3A%206px%2012px%3Bborder%3A%201px%20solid%20%23E5E7E9%3Bborder-radius%3A%206px%3Boutline%3A%20none%3Bmargin-bottom%3A%2015px%3Bfont-size%3A%2015px%3B%7Dinput%7Bheight%3A%2025px%3B%7Dselect%7Bwidth%3A%20100px%3Bheight%3A%2040px%3B%7Dbody%7Bmargin%3A0%3B%7Dlabel%7Bfont-size%3A%2015px%3Bfont-family%3A%20%22Open%20Sans%22%2C%20Arial%2C%20sans-serif%3Bline-height%3A%2026px%3Bmargin-bottom%3A8px%3Bfont-weight%3A%20bold%3B%7Dbutton%3Afocus%2Cinput%3Afocus%2Ca%3Afocus%2Cselect%3Afocus%7Boutline%3A%20none%20!important%3Bbox-shadow%3A%200%200%200%203px%20lightskyblue%20!important%3B%7D"
   ];
-  // I'm not sure that this is correct init values
+
   let ccToken: string = "";
   let ccExpiry: string = "";
-  let ccMethod: string= "";
-  // user can select method from some selector-input
-  // let ccMethod: int
 
   const getIframeUrl = () => {
     return `${pathPart}?${paramsParts.join("&")}`;
   };
 
-  const putIframeVars = (eventJson: any) => {
-    ccToken = eventJson.message;
-    ccExpiry = eventJson.expiry;
-  };
+  const ErrorBlock: React.FC = () =>
+    (ccToken && ccExpiry) ?
+      <S.Div>
+      </S.Div>
+    :
+      <S.Div>
+        <ErrorMessage errors={cardErrors} />
+      </S.Div>
+  ;
 
-  const handlerMethod = () => {
-    const method: any = document.getElementById("methodselector");
-    if (method){
-      ccMethod = method.options[method.selectedIndex].value;
-    }
-  };
 
   const handleTokenEvent = () => {
     window.addEventListener(
       "message",
       event => {
-        // TODO validate refreshedData as obj with non-empty strings message and expiry
-        // Error block
-        const refreshedData = JSON.parse(event.data);
-        if (refreshedData.expiry && refreshedData.message) {
-          putIframeVars(refreshedData);
+        if ((typeof event.data === "string") && (event.data !== `{"message":"","expiry":""}`)) {
+          const refreshedData = JSON.parse(event.data);
+          ccToken = refreshedData.message;
+          ccExpiry = refreshedData.expiry;
+        }else {
+          const cardConnectResponseError = [
+            {
+              message:
+                "Response error. CardConnect returned no token or card data. 345345",
+            },
+          ];
+          onError(cardConnectResponseError)
         }
       },
       false
     );
   };
 
-
+  const cardErrors = [...errors]
+  const allErrors = [...submitErrors];
 
   return (
-    /* TODO 
-    * add selector input after iframe for ccMethod
-    * ensure that the form submits the given after updating and validating the data of the iframe in the function
-    * ensure that the form submits the given after select method id
-    * add error block
-    */
-    <Mutation mutation={ADD_CC}>
+
+    <Mutation
+      mutation={ADD_CC}
+      onCompleted={(data: any) => {
+
+        // Don't know why but checkoutAddCc can be null without onError-calling
+        const response = data.checkoutAddCc;
+        if (response) {
+          processPayment(response.token, response.card);
+        } else {
+          const cardConnectResponseError = [
+            {
+              message:
+                "Response error. CardConnect returned no token or card data.",
+            },
+          ];
+          setSubmitErrors(cardConnectResponseError)
+        }
+      }}
+    >
       {(addCc: Function) => (
         <S.Form
           id={formId}
           ref={formRef}
           onSubmit={(e: any) => {
-            /* TODO:
-            * delete preventDefault after finish with this Gateway
-            * clear any logs
-            */
-
-            // TODO: this function will
-            // - send method id 
-            // - get token from API
 
             setTimeout(() => {
-              if (ccToken && ccExpiry && ccMethod) {
-                addCc({
-                  variables: {token: ccToken, expiry: ccExpiry, methodId: ccMethod}
-                });
-              }
               if (!ccToken || !ccExpiry) {
-                alert("Missing Card Data");
+                const cardConnectDataError = [
+                  {
+                    message:
+                      "Data error. CardConnect returned no data in message. Fill the form.",
+                  },
+                ];
+                setSubmitErrors(cardConnectDataError)
+              }else {
+                if (ccToken && ccExpiry) {
+                  addCc({
+                    variables: {token: ccToken, expiry: ccExpiry}
+                  })
+                }
               }
-              if (!ccMethod) {
-                alert("Missing Payment Method")
-              }
-            }, 2000)
+            }, 500)
 
-            //TODO token from ADD CC must be here
-            processPayment(ccToken);
           }}>
           <iframe
             title="CardPointeTokenizer"
@@ -129,22 +148,10 @@ const CardConnectPaymentGateway: React.FC<IProps> = ({
             height="100%"
             onLoad={handleTokenEvent}
           />
-          <S.Label >
-            Payment Method
-          </S.Label>
-          <S.Select
-            id="methodselector"
-            defaultValue=""
-            onChange={handlerMethod}
-          >
-            <option value="">--</option>
-            <option value="JCB">JCB</option>
-            <option value="MASTERCARD">MASTERCARD</option>
-            <option value="DISCOVERY">DISCOVERY</option>
-            <option value="AMEX">AMEX</option>
-            <option value="VISA">VISA</option>
-          </S.Select>
-
+          <ErrorBlock />
+          <S.Div>
+            <ErrorMessage errors={allErrors} />
+          </S.Div>
         </S.Form>
       )}
     </Mutation>
