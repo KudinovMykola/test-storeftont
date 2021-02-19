@@ -51,6 +51,8 @@ const CardConnectPaymentGateway: React.FC<IProps> = ({
   let ccToken: string = "";
   let ccExpiry: string = "";
 
+  console.log(`Scope log ${ccToken}`)
+
   const getIframeUrl = () => {
     return `${pathPart}?${paramsParts.join("&")}`;
   };
@@ -62,23 +64,27 @@ const CardConnectPaymentGateway: React.FC<IProps> = ({
     :
       <S.Div>
         <ErrorMessage errors={cardErrors} />
-      </S.Div>
-  ;
+      </S.Div>;
 
 
   const handleTokenEvent = () => {
     window.addEventListener(
       "message",
       event => {
+        console.log(Date.now)
         if ((typeof event.data === "string") && (event.data !== `{"message":"","expiry":""}`)) {
+          console.log(`Before`)
+          console.log(`Parsed data ${event.data}`)
           const refreshedData = JSON.parse(event.data);
+          console.log(`After`)
           ccToken = refreshedData.message;
           ccExpiry = refreshedData.expiry;
+          console.log(`Token event ${ccToken}`)
         }else {
           const cardConnectResponseError = [
             {
               message:
-                "Response error. CardConnect returned no token or card data. 345345",
+                "Token error. CardConnect returned no token.",
             },
           ];
           onError(cardConnectResponseError)
@@ -100,7 +106,7 @@ const CardConnectPaymentGateway: React.FC<IProps> = ({
         // Don't know why but checkoutAddCc can be null without onError-calling
         const response = data.checkoutAddCc;
         if (response) {
-          processPayment(response.token, response.card);
+          // processPayment(response.token, response.card);
         } else {
           const cardConnectResponseError = [
             {
@@ -118,6 +124,8 @@ const CardConnectPaymentGateway: React.FC<IProps> = ({
           ref={formRef}
           onSubmit={(e: any) => {
 
+            console.log(`Submit token ${ccToken}`)
+
             setTimeout(() => {
               if (!ccToken || !ccExpiry) {
                 const cardConnectDataError = [
@@ -127,6 +135,7 @@ const CardConnectPaymentGateway: React.FC<IProps> = ({
                   },
                 ];
                 setSubmitErrors(cardConnectDataError)
+
               }else {
                 if (ccToken && ccExpiry) {
                   addCc({
