@@ -1,33 +1,13 @@
-import React, {useState} from "react";
+import React, {useEffect, useState} from "react";
 
-import { ErrorMessage } from "@components/atoms";
-import { IFormError } from "@types";
+import { ErrorMessage, Iframe } from "@components/atoms";
+import { Loader } from "@temp/components";
 
-import gql from "graphql-tag";
-import { Mutation } from "react-apollo";
+import { TypedAddCcMutation } from "./queris"
 
 import * as S from "./styles";
-import { IProps } from "./types";
-
-const ADD_CC = gql`
-  mutation addCc($token: String!, $expiry: String!){
-    checkoutAddCc(
-      input: {
-        ccToken: $token,
-        ccExpiry: $expiry
-      }
-    ) {
-      token,
-      card {
-        brand,
-        firstDigits,
-        lastDigits,
-        expMonth,
-        expYear  
-      }
-    }
-  }
-`;
+import { IFormError,IFormIframe } from "@types";
+import { IProps, CreateAddCC } from "./types";
 
 const CardConnectPaymentGateway: React.FC<IProps> = ({
   processPayment,
@@ -36,10 +16,9 @@ const CardConnectPaymentGateway: React.FC<IProps> = ({
   errors = [],
   onError,
 }: IProps) => {
-  const [SubmitCardErrors, setSubmitCardErrors] = useState<IFormError[]>([]);
   const [submitErrors, setSubmitErrors] = useState<IFormError[]>([]);
-  const [ccToken, setToken] = useState("");
-  const [ccExpiry, setExpiry] = useState("");
+  const [iframeData, setIframeData] = useState<IFormIframe>({})
+  const [isLoading, setIsLoading] = useState(true);
 
 
   const pathPart = "https://boltgw.cardconnect.com:8443/itoke/ajax-tokenizer.html";
@@ -57,101 +36,118 @@ const CardConnectPaymentGateway: React.FC<IProps> = ({
     return `${pathPart}?${paramsParts.join("&")}`;
   };
 
+  useEffect(() => {
+    setTimeout(() => {
+      setIsLoading(false)
+    }, 2000)
+  })
+
+  const errorHandler = () => {
+    window.addEventListener("blur", () => {
+      if (document.activeElement === document.getElementById("tokenframe")) {
+        setSubmitErrors([]);
+      }
+    })
+  }
+
+
   const handleTokenEvent = () => {
+
     window.addEventListener(
       "message",
       event => {
         if ((typeof event.data === "string") && (event.data !== `{"message":"","expiry":""}`)) {
-          setSubmitCardErrors([]);
-          const refreshedData = JSON.parse(event.data);
-          setToken(refreshedData.message);
-          setExpiry(refreshedData.expiry);
+          setIframeData(JSON.parse(event.data));
         }else {
-          setToken("");
-          setExpiry("");
-          const cardConnectResponseError = [
+          setIframeData({})
+          const cardConnectMessageError = [
             {
               message:
                 "Token error. CardConnect returned no token.",
             },
           ];
-          setSubmitCardErrors(cardConnectResponseError);
+          setSubmitErrors(cardConnectMessageError);
         }
       },
       false
     );
   };
 
-  const cardErrors = [...SubmitCardErrors];
+  const paymentProcess = (
+    data: CreateAddCC
+  ) => {
+    const response = data.checkoutAddCc;
+    if (response) {
+      processPayment(response.token, response.card);
+    } else {
+      const cardConnectResponseError = [
+        {
+          message:
+            "Response error. CardConnect returned no token or card data.",
+        },
+      ];
+      setSubmitErrors(cardConnectResponseError);
+    }
+  }
+
   const allErrors = [...submitErrors];
 
   return (
 
-    <Mutation
-      mutation={ADD_CC}
-      onCompleted={(data: any) => {
-
-        // Don't know why but checkoutAddCc can be null without onError-calling
-        const response = data.checkoutAddCc;
-        if (response) {
-          processPayment(response.token, response.card);
-        } else {
-          const cardConnectResponseError = [
-            {
-              message:
-                "Response error. CardConnect returned no token or card data.",
-            },
-          ];
-          setSubmitErrors(cardConnectResponseError);
-        }
-      }}
+    <TypedAddCcMutation
+      onCompleted={data => paymentProcess(data)}
     >
-      {(addCc: Function) => (
-        <S.Form
-          id={formId}
-          ref={formRef}
-          onSubmit={(e: any) => {
+      {(addCc, {data}) => {
+        return (
+          <S.Form
+            id={formId}
+            ref={formRef}
+            onLoad={errorHandler}
+            onSubmit={(e: any) => {
+              const ccExpiry = iframeData.expiry;
+              const ccToken = iframeData.message;
+              setTimeout(() => {
+                if (!ccToken || !ccExpiry) {
+                  const cardConnectDataError = [
+                    {
+                      message:
+                        "Data error. CardConnect returned no data in message. Fill the form.",
+                    },
+                  ];
+                  setSubmitErrors(cardConnectDataError)
 
-            setTimeout(() => {
-              if (!ccToken || !ccExpiry) {
-                const cardConnectDataError = [
-                  {
-                    message:
-                      "Data error. CardConnect returned no data in message. Fill the form.",
-                  },
-                ];
-                setSubmitErrors(cardConnectDataError)
-
-              }else {
-                setSubmitErrors([])
-                if (ccToken && ccExpiry) {
-                  addCc({
-                    variables: {token: ccToken, expiry: ccExpiry}
-                  });
+                }else {
+                  setSubmitErrors([])
+                  if (ccToken && ccExpiry) {
+                    addCc({
+                      variables: {token: ccToken, expiry: ccExpiry}
+                    });
+                  }
                 }
-              }
-            }, 500);
-          }}>
-          <iframe
-            title="CardPointeTokenizer"
-            id="tokenframe"
-            name="tokenframe"
-            src={getIframeUrl()}
-            frameBorder="0"
-            scrolling="no"
-            width="100%"
-            height="100%"
-            onLoad={handleTokenEvent}
-          />
-          <S.Div>
-            <ErrorMessage errors={cardErrors} />
-          </S.Div>
-          <S.Div>
-            <ErrorMessage errors={allErrors} />
-          </S.Div>
-        </S.Form>
-      )}
-    </Mutation>
+              }, 500);
+            }}>
+            {isLoading?
+              <Loader />:
+              null
+            }
+            <Iframe
+              title="CardPointeTokenizer"
+              id="tokenframe"
+              name="tokenframe"
+              src={getIframeUrl()}
+              frameBorder="0"
+              scrolling="no"
+              width="100%"
+              height="100%"
+              onLoad={handleTokenEvent}
+            />
+            <S.Div>
+              <ErrorMessage errors={allErrors} />
+            </S.Div>
+          </S.Form>
+        )
+      }}
+    </TypedAddCcMutation>
   );
 };
 
