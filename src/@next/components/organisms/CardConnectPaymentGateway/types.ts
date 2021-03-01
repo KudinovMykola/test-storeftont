@@ -25,6 +25,31 @@ export interface IProps {
      * Method called when gateway error occured.
      */
     onError: (errors: IFormError[]) => void;
-  }
-  
+}
+
+export interface CreditCard {
+    brand: string;
+    firstDigits: string;
+    lastDigits: string;
+    expMonth: number;
+    expYear: number;
+}
+
+export interface CreateAddCC_cardConnectAdditionalCreate {
+    __typename: "CardConnectAdditionalCreate";
+
+    token: string;
+
+    card: CreditCard;
+
+}
+
+export interface CreateAddCC {
+    checkoutAddCc: CreateAddCC_cardConnectAdditionalCreate | null
+}
+
+export interface CreateAddCCVariables {
+    token: string;
+    expiry: string;
+}
   

@@ -3,11 +3,10 @@ import React from "react";
 import { ErrorMessage, Radio } from "@components/atoms";
 import { PROVIDERS } from "@temp/core/config";
 
-import { CardConnectPaymentGateway } from "@components/organisms/CardConnectPaymentGateway";
-
 import {
   BraintreePaymentGateway,
   DummyPaymentGateway,
+  CardConnectPaymentGateway,
   StripePaymentGateway,
   AdyenPaymentGateway,
 } from "..";
